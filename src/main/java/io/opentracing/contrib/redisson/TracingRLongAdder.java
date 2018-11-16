@@ -1,0 +1,98 @@
+/*
+ * Copyright 2018 The OpenTracing Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+package io.opentracing.contrib.redisson;
+
+import static io.opentracing.contrib.redisson.TracingHelper.nullable;
+
+import io.opentracing.Span;
+import java.util.concurrent.TimeUnit;
+import org.redisson.api.RFuture;
+import org.redisson.api.RLongAdder;
+
+public class TracingRLongAdder extends TracingRExpirable implements RLongAdder {
+  private final RLongAdder longAdder;
+  private final TracingHelper tracingHelper;
+
+  public TracingRLongAdder(RLongAdder longAdder, TracingHelper tracingHelper) {
+    super(longAdder, tracingHelper);
+    this.longAdder = longAdder;
+    this.tracingHelper = tracingHelper;
+  }
+
+  @Override
+  public void add(long x) {
+    Span span = tracingHelper.buildSpan("add", longAdder);
+    span.setTag("value", x);
+    tracingHelper.decorate(span, () -> longAdder.add(x));
+  }
+
+  @Override
+  public void increment() {
+    Span span = tracingHelper.buildSpan("increment", longAdder);
+    tracingHelper.decorate(span, longAdder::increment);
+  }
+
+  @Override
+  public void decrement() {
+    Span span = tracingHelper.buildSpan("decrement", longAdder);
+    tracingHelper.decorate(span, longAdder::decrement);
+  }
+
+  @Override
+  public long sum() {
+    Span span = tracingHelper.buildSpan("sum", longAdder);
+    return tracingHelper.decorate(span, longAdder::sum);
+  }
+
+  @Override
+  public void reset() {
+    Span span = tracingHelper.buildSpan("reset", longAdder);
+    tracingHelper.decorate(span, longAdder::reset);
+  }
+
+  @Override
+  public RFuture<Long> sumAsync() {
+    Span span = tracingHelper.buildSpan("sumAsync", longAdder);
+    return tracingHelper.prepareRFuture(span, longAdder::sumAsync);
+  }
+
+  @Override
+  public RFuture<Long> sumAsync(long timeout, TimeUnit timeUnit) {
+    Span span = tracingHelper.buildSpan("sumAsync", longAdder);
+    span.setTag("timeout", timeout);
+    span.setTag("timeUnit", nullable(timeUnit));
+    return tracingHelper.prepareRFuture(span, () -> longAdder.sumAsync(timeout, timeUnit));
+  }
+
+  @Override
+  public RFuture<Void> resetAsync() {
+    Span span = tracingHelper.buildSpan("resetAsync", longAdder);
+    return tracingHelper.prepareRFuture(span, longAdder::resetAsync);
+  }
+
+  @Override
+  public RFuture<Void> resetAsync(long timeout, TimeUnit timeUnit) {
+    Span span = tracingHelper.buildSpan("resetAsync", longAdder);
+    span.setTag("timeout", timeout);
+    span.setTag("timeUnit", nullable(timeUnit));
+    return tracingHelper.prepareRFuture(span, () -> longAdder.resetAsync(timeout, timeUnit));
+  }
+
+  @Override
+  public void destroy() {
+    Span span = tracingHelper.buildSpan("destroy", longAdder);
+    tracingHelper.decorate(span, longAdder::destroy);
+  }
+
+}
