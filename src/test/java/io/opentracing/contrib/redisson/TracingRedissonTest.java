@@ -54,19 +54,18 @@ public class TracingRedissonTest {
     redisServer.start();
 
     Config config = new Config();
-    config.useSingleServer()
-        .setAddress("redis://127.0.0.1:6379");
+    config.useSingleServer().setAddress("redis://127.0.0.1:6379");
 
     client = new TracingRedissonClient(Redisson.create(config), tracer, false);
   }
 
   @After
   public void after() {
-    if (redisServer != null) {
-      redisServer.stop();
-    }
     if (client != null) {
       client.shutdown();
+    }
+    if (redisServer != null) {
+      redisServer.stop();
     }
   }
 
@@ -166,11 +165,6 @@ public class TracingRedissonTest {
     try (Scope ignore = tracer.buildSpan("test").startActive(true)) {
       Span activeSpan = tracer.activeSpan();
 
-      Config config = new Config();
-      config.useSingleServer()
-          .setAddress("redis://127.0.0.1:6379");
-
-      RedissonClient client = new TracingRedissonClient(Redisson.create(config), tracer, false);
       RMap<String, String> map = client.getMap("map");
 
       assertFalse(map.containsKeyAsync("key").toCompletableFuture().thenApply(s -> {
@@ -181,7 +175,6 @@ public class TracingRedissonTest {
         return s;
       }).get(15, TimeUnit.SECONDS));
 
-      client.shutdown();
     }
     List<MockSpan> spans = tracer.finishedSpans();
     assertEquals(2, spans.size());
